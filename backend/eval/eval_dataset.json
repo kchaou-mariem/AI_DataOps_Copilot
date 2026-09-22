@@ -1,0 +1,21 @@
+{
+  "description": "Jeu de questions/réponses de référence basé sur les 4 documents NovaShop, pour évaluer retrieval + faithfulness du RAG.",
+  "questions": [
+    {"id": "q1", "question": "Combien de temps ai-je pour retourner un produit ?", "expected_answer": "30 jours calendaires à compter de la réception du colis.", "expected_source": "procedure_retour.pdf"},
+    {"id": "q2", "question": "Les sous-vêtements peuvent-ils être retournés ?", "expected_answer": "Non, sauf défaut avéré, pour raisons d'hygiène.", "expected_source": "procedure_retour.pdf"},
+    {"id": "q3", "question": "Qui paie les frais de retour en cas de produit défectueux ?", "expected_answer": "NovaShop prend en charge intégralement les frais de retour.", "expected_source": "procedure_retour.pdf"},
+    {"id": "q4", "question": "Sous combien de temps suis-je remboursé après un retour ?", "expected_answer": "5 à 7 jours ouvrés après réception et validation du produit.", "expected_source": "procedure_retour.pdf"},
+    {"id": "q5", "question": "Quel est le délai de livraison standard en France métropolitaine ?", "expected_answer": "2 à 4 jours ouvrés.", "expected_source": "politique_livraison.pdf"},
+    {"id": "q6", "question": "À partir de quel montant la livraison standard est-elle gratuite en France ?", "expected_answer": "49€ d'achat.", "expected_source": "politique_livraison.pdf"},
+    {"id": "q7", "question": "Que faire si mon colis arrive endommagé ?", "expected_answer": "Refuser le colis ou émettre des réserves auprès du transporteur, puis contacter le service client sous 48h avec photos.", "expected_source": "politique_livraison.pdf"},
+    {"id": "q8", "question": "Au bout de combien de jours un colis en France est-il considéré comme perdu ?", "expected_answer": "20 jours sans livraison.", "expected_source": "politique_livraison.pdf"},
+    {"id": "q9", "question": "Jusqu'à quel montant un chargé de clientèle peut-il accorder une remise sans validation ?", "expected_answer": "10% du montant de la commande, dans la limite de 30€.", "expected_source": "reglement_interne_commercial.pdf"},
+    {"id": "q10", "question": "Quand une réclamation doit-elle être escaladée au Responsable Service Client ?", "expected_answer": "Si le litige dépasse 150€, si le client a déjà ouvert 2 réclamations dans les 6 derniers mois, ou en cas de demande hors délai légal.", "expected_source": "reglement_interne_commercial.pdf"},
+    {"id": "q11", "question": "Quel est l'objectif de délai de traitement des réclamations ?", "expected_answer": "Clôturer 90% des réclamations sous 72h ouvrées.", "expected_source": "reglement_interne_commercial.pdf"},
+    {"id": "q12", "question": "Quel est le chiffre d'affaires du Q3 2026 ?", "expected_answer": "2 340 000 €.", "expected_source": "rapport_trimestriel_q3_2026.pdf"},
+    {"id": "q13", "question": "Quel est le produit le plus vendu au Q3 2026 ?", "expected_answer": "Sneakers Urban Line, avec 8 450 unités vendues.", "expected_source": "rapport_trimestriel_q3_2026.pdf"},
+    {"id": "q14", "question": "Pourquoi les ventes ont-elles baissé en septembre ?", "expected_answer": "Effet de saisonnalité de fin d'été et un incident logistique chez le transporteur en semaine 37.", "expected_source": "rapport_trimestriel_q3_2026.pdf"},
+    {"id": "q15", "question": "Quelle part du chiffre d'affaires Q3 vient de l'Union Européenne ?", "expected_answer": "31%.", "expected_source": "rapport_trimestriel_q3_2026.pdf"},
+    {"id": "q16", "question": "Quelle est la politique de retour pour un changement d'avis simple ?", "expected_answer": "Le client peut retourner le produit sous 30 jours, mais les frais de retour restent à sa charge (déduits du remboursement), sauf abonnement NovaShop+.", "expected_source": "procedure_retour.pdf"}
+  ]
+}
