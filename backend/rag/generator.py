@@ -1,27 +1,72 @@
 """
-Génération de la réponse à partir du contexte récupéré (Phase 1).
+Génération de réponses (Phase 1).
+
+Étapes :
+    1. Récupérer les chunks pertinents via search_with_rerank (retrieval + reranking)
+    2. Construire un prompt combinant la question et le contexte récupéré
+    3. Envoyer ce prompt au LLM (Ollama) pour générer une réponse rédigée
 """
-from backend.rag.retriever import RetrievedChunk
+from dataclasses import dataclass
 
-PROMPT_TEMPLATE = """Tu es un assistant qui répond aux questions d'employés en te basant \
-UNIQUEMENT sur le contexte fourni ci-dessous. Si la réponse ne figure pas dans le contexte, \
-dis clairement que tu ne sais pas.
+from backend.rag.retriever import search_with_rerank, RetrievedChunk
 
-Contexte :
-{context}
 
-Question : {question}
-
-Réponse :"""
+@dataclass
+class GeneratedAnswer:
+    answer: str
+    sources: list[RetrievedChunk]
 
 
 def build_prompt(question: str, chunks: list[RetrievedChunk]) -> str:
-    context = "\n\n".join(f"[{c.filename} - page {c.page}] {c.text}" for c in chunks)
-    return PROMPT_TEMPLATE.format(context=context, question=question)
+    """Construit le prompt envoyé au LLM, en injectant les chunks comme contexte."""
+    context = "\n\n".join(
+        f"[Source: {chunk.filename}, page {chunk.page}]\n{chunk.text}"
+        for chunk in chunks
+    )
+
+    prompt = f"""Tu es un assistant qui répond aux questions UNIQUEMENT à partir du contexte fourni ci-dessous.
+Si la réponse ne se trouve pas dans le contexte, dis clairement que tu ne sais pas — n'invente jamais d'information.
+
+CONTEXTE :
+{context}
+
+QUESTION : {question}
+
+RÉPONSE :"""
+
+    return prompt
 
 
-def generate_answer(question: str, chunks: list[RetrievedChunk]) -> str:
-    """Appelle le LLM (Ollama) avec le prompt construit et retourne la réponse brute."""
+def call_llm(prompt: str) -> str:
+    """Envoie le prompt au LLM via Ollama et retourne la réponse générée."""
+    import os
+    import ollama
+
+    host = os.getenv("OLLAMA_HOST", "http://localhost:11434")
+    model = os.getenv("OLLAMA_MODEL", "qwen2.5:3b-instruct")
+
+    client = ollama.Client(host=host)
+    response = client.chat(
+        model=model,
+        messages=[{"role": "user", "content": prompt}],
+    )
+
+    return response["message"]["content"]
+
+
+def generate_answer(question: str, retrieval_top_k: int = 12, final_top_k: int = 4) -> GeneratedAnswer:
+    """
+    Pipeline complet : retrieval + reranking, puis génération de la réponse par le LLM.
+    """
+    chunks = search_with_rerank(question, retrieval_top_k=retrieval_top_k, final_top_k=final_top_k)
+
+    if not chunks:
+        return GeneratedAnswer(
+            answer="Aucun document pertinent n'a été trouvé pour répondre à cette question.",
+            sources=[],
+        )
+
     prompt = build_prompt(question, chunks)
-    # TODO : appeler le client ollama avec OLLAMA_MODEL (.env)
-    raise NotImplementedError
+    answer_text = call_llm(prompt)
+
+    return GeneratedAnswer(answer=answer_text, sources=chunks)
