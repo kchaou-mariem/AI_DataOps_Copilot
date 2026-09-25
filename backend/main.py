@@ -10,8 +10,7 @@ Endpoints principaux (à mesure des phases) :
     Phase 3 : /pipeline/upload (déclenché aussi par n8n)
 """
 from fastapi import FastAPI
-
-from api.rag_routes import router as rag_router
+from backend.api.rag_routes import router as rag_router
 
 app = FastAPI(
     title="AI DataOps Copilot",

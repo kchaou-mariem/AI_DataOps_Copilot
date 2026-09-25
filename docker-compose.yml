@@ -1,8 +1,8 @@
 services:
   backend:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: backend/Dockerfile
     ports:
       - "8000:8000"
     env_file: .env
@@ -10,8 +10,9 @@ services:
       - postgres
       - qdrant
     volumes:
-      - ./backend:/app
+      - ./backend:/app/backend
       - ./data:/app/data
+      - ./tests:/app/tests
 
   postgres:
     image: postgres:16
