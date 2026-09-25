@@ -1,5 +1,23 @@
 """Tests du retriever RAG (Phase 1)."""
-from backend.rag.retriever import search, get_all_chunks  # adapte le chemin si ton fichier a un autre nom que retriever.py
+"""Tests du retriever RAG (Phase 1)."""
+import pytest
+import os
+from backend.rag.ingestion import ingest_pdf
+from backend.rag.retriever import search, search_with_rerank, get_all_chunks
+
+
+@pytest.fixture(scope="module", autouse=True)
+def ensure_data_ingested():
+    """
+    S'assure que la collection Qdrant contient des données avant de lancer
+    les tests du retriever — évite l'erreur 'Collection doesn't exist' sur un
+    environnement frais (nouvelle machine, CI/CD, volume Qdrant réinitialisé).
+    """
+    docs_dir = "data/documents"
+    for filename in os.listdir(docs_dir):
+        if filename.endswith(".pdf"):
+            ingest_pdf(os.path.join(docs_dir, filename))
+    yield
 
 def test_search():
     results = search("Combien de temps ai-je pour retourner un produit ?", top_k=2)
