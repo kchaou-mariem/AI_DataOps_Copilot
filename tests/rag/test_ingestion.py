@@ -64,3 +64,30 @@ def test_compute_chunk_size():
     assert size_small == 100
     assert size_large == 500
     assert size_medium == 300
+
+
+def test_ingest_all_documents():
+    import os
+    docs_dir = "data/documents"
+    total = 0
+    for filename in os.listdir(docs_dir):
+        if filename.endswith(".pdf"):
+            n = ingest_pdf(os.path.join(docs_dir, filename))
+            print(f"{filename} -> {n} chunks")
+            total += n
+    print(f"Total : {total} chunks ingérés")
+    assert total > 0
+
+
+def test_clear_and_reingest():
+    import os
+    from qdrant_client import QdrantClient
+
+    host = os.getenv("QDRANT_HOST", "localhost")
+    port = int(os.getenv("QDRANT_PORT", 6333))
+    collection_name = os.getenv("QDRANT_COLLECTION", "documents")
+
+    client = QdrantClient(host=host, port=port)
+    if client.collection_exists(collection_name):
+        client.delete_collection(collection_name)
+    print("Collection supprimée — relance ingest_pdf() pour repartir propre.")

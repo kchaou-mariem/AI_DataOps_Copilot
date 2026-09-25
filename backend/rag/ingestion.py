@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from dataclasses import dataclass
-
+import uuid
 
 @dataclass
 class Chunk:
@@ -128,41 +128,41 @@ def embed_chunks(chunks: list[Chunk]) -> list[list[float]]:
     return embeddings.tolist()
 
 
-def store_in_qdrant(chunks: list[Chunk], embeddings: list[list[float]]) -> None:
-    """Upsert les chunks + embeddings + métadonnées dans la collection Qdrant."""
-    import os
-    import uuid
-    from qdrant_client import QdrantClient
-    from qdrant_client.models import Distance, PointStruct, VectorParams
+# def store_in_qdrant(chunks: list[Chunk], embeddings: list[list[float]]) -> None:
+#     """Upsert les chunks + embeddings + métadonnées dans la collection Qdrant."""
+#     import os
+#     import uuid
+#     from qdrant_client import QdrantClient
+#     from qdrant_client.models import Distance, PointStruct, VectorParams
 
-    host = os.getenv("QDRANT_HOST", "localhost")
-    port = int(os.getenv("QDRANT_PORT", 6333))
-    collection_name = os.getenv("QDRANT_COLLECTION", "documents")
+#     host = os.getenv("QDRANT_HOST", "localhost")
+#     port = int(os.getenv("QDRANT_PORT", 6333))
+#     collection_name = os.getenv("QDRANT_COLLECTION", "documents")
 
-    client = QdrantClient(host=host, port=port)
+#     client = QdrantClient(host=host, port=port)
 
-    # Créer la collection si elle n'existe pas encore
-    if not client.collection_exists(collection_name):
-        client.create_collection(
-            collection_name=collection_name,
-            vectors_config=VectorParams(size=len(embeddings[0]), distance=Distance.COSINE),
-        )
+#     # Créer la collection si elle n'existe pas encore
+#     if not client.collection_exists(collection_name):
+#         client.create_collection(
+#             collection_name=collection_name,
+#             vectors_config=VectorParams(size=len(embeddings[0]), distance=Distance.COSINE),
+#         )
 
-    points = [
-        PointStruct(
-            id=str(uuid.uuid4()),
-            vector=embedding,
-            payload={
-                "text": chunk.text,
-                "filename": chunk.filename,
-                "page": chunk.page,
-                "chunk_id": chunk.chunk_id,
-            },
-        )
-        for chunk, embedding in zip(chunks, embeddings)
-    ]
+#     points = [
+#         PointStruct(
+#             id=str(uuid.uuid4()),
+#             vector=embedding,
+#             payload={
+#                 "text": chunk.text,
+#                 "filename": chunk.filename,
+#                 "page": chunk.page,
+#                 "chunk_id": chunk.chunk_id,
+#             },
+#         )
+#         for chunk, embedding in zip(chunks, embeddings)
+#     ]
 
-    client.upsert(collection_name=collection_name, points=points)
+#     client.upsert(collection_name=collection_name, points=points)
 
 
 # def ingest_pdf(pdf_path: str) -> int:
@@ -176,7 +176,44 @@ def store_in_qdrant(chunks: list[Chunk], embeddings: list[list[float]]) -> None:
 #     store_in_qdrant(all_chunks, embeddings)
 #     return len(all_chunks)
 
+import hashlib
 
+def store_in_qdrant(chunks: list[Chunk], embeddings: list[list[float]]) -> None:
+    import os
+    from qdrant_client import QdrantClient
+    from qdrant_client.models import Distance, PointStruct, VectorParams
+
+    host = os.getenv("QDRANT_HOST", "localhost")
+    port = int(os.getenv("QDRANT_PORT", 6333))
+    collection_name = os.getenv("QDRANT_COLLECTION", "documents")
+
+    client = QdrantClient(host=host, port=port)
+
+    if not client.collection_exists(collection_name):
+        client.create_collection(
+            collection_name=collection_name,
+            vectors_config=VectorParams(size=len(embeddings[0]), distance=Distance.COSINE),
+        )
+
+    def deterministic_id(chunk_id: str) -> str:
+        # Qdrant exige un UUID valide ou un entier — on dérive un UUID stable à partir du chunk_id
+        return str(uuid.UUID(hashlib.md5(chunk_id.encode()).hexdigest()))
+
+    points = [
+        PointStruct(
+            id=deterministic_id(chunk.chunk_id),  # même chunk_id → même point Qdrant → upsert = remplacement
+            vector=embedding,
+            payload={
+                "text": chunk.text,
+                "filename": chunk.filename,
+                "page": chunk.page,
+                "chunk_id": chunk.chunk_id,
+            },
+        )
+        for chunk, embedding in zip(chunks, embeddings)
+    ]
+
+    client.upsert(collection_name=collection_name, points=points)
 
 
 
