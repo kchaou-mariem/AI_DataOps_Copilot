@@ -11,6 +11,8 @@ Endpoints principaux (à mesure des phases) :
 """
 from fastapi import FastAPI
 from backend.api.rag_routes import router as rag_router
+from backend.api.agent_routes import router as agent_router
+
 
 app = FastAPI(
     title="AI DataOps Copilot",
@@ -19,6 +21,7 @@ app = FastAPI(
 )
 
 app.include_router(rag_router, prefix="/rag", tags=["RAG"])
+app.include_router(agent_router, prefix="/agent", tags=["Agent"])
 
 
 @app.get("/health")
