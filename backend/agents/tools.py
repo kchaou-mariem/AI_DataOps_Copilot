@@ -67,10 +67,6 @@ SQL_TOOL_SCHEMA = {
     },
 }
 
-from backend.rag.retriever import search
-from backend.rag.generator import generate_answer
-
-
 from backend.rag.generator import generate_answer
 
 
@@ -83,6 +79,30 @@ def rag_tool(question: str) -> str:
 
     sources = ", ".join(sorted(set(f"{s.filename} (p.{s.page})" for s in result.sources)))
     return f"{result.answer}\n\nSources : {sources}"
+
+
+RAG_TOOL_SCHEMA = {
+    "type": "function",
+    "function": {
+        "name": "rag_tool",
+        "description": (
+            "Recherche dans les documents internes de l'entreprise NovaShop : procédure de retour produit, "
+            "politique de livraison, règlement interne commercial, rapport trimestriel. "
+            "Utilise cet outil pour des questions sur les procédures, politiques, règles ou informations "
+            "qualitatives contenues dans ces documents (pas pour des données chiffrées de la base de données)."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "question": {
+                    "type": "string",
+                    "description": "La question à poser sur les documents internes.",
+                }
+            },
+            "required": ["question"],
+        },
+    },
+}
 
 from backend.data_pipeline.profiling import profile_table
 
