@@ -8,15 +8,54 @@ from sqlalchemy import text
 from backend.data_pipeline.loader import get_engine
 
 
-def sql_tool(query: str) -> str:
-    """Exécute une requête SQL en lecture seule sur la base retail et retourne le résultat en texte.
+def get_schema_columns() -> dict[str, set[str]]:
+    """Retourne les tables et colonnes réellement disponibles, à partir des modèles SQLAlchemy."""
+    from backend.database.models import Base
 
-    Sécurité : rejette toute requête qui ne commence pas par SELECT, pour empêcher
-    l'agent de modifier ou supprimer des données par erreur (ou par une requête mal générée).
-    """
+    return {
+        table.name: {col.name for col in table.columns}
+        for table in Base.metadata.tables.values()
+    }
+
+def validate_query_columns(query: str, schema: dict[str, set[str]]) -> str | None:
+    """Vérifie que les tables/colonnes référencées dans la requête existent bien."""
+    import re
+
+    query_lower = query.lower()
+
+    mentioned_tables = re.findall(r"(?:from|join)\s+(\w+)", query_lower)
+    known_tables = set(schema.keys())
+    unknown_tables = [t for t in mentioned_tables if t not in known_tables]
+    if unknown_tables:
+        return f"Table(s) inexistante(s) : {', '.join(unknown_tables)}. Tables disponibles : {', '.join(known_tables)}."
+
+    # Les alias définis avec "AS xxx" sont des noms inventés valides, à ne pas vérifier
+    aliases = set(re.findall(r"\bas\s+([a-z_][a-z0-9_]*)", query_lower))
+
+    all_known_columns = {col for cols in schema.values() for col in cols}
+    sql_keywords = {"select", "from", "where", "join", "on", "group", "by", "order", "as",
+                     "count", "sum", "avg", "limit", "and", "or", "desc", "asc", "distinct", "inner", "left"}
+    candidates = re.findall(r"\b([a-z_][a-z0-9_]*)\b", query_lower)
+    for word in candidates:
+        if word in sql_keywords or word in known_tables or word in all_known_columns or word in aliases:
+            continue
+        if word.isdigit() or len(word) <= 2:
+            continue
+        return f"Colonne ou terme inconnu détecté : '{word}'. Vérifie le schéma des tables."
+
+    return None
+
+
+def sql_tool(query: str) -> str:
+    """Exécute une requête SQL en lecture seule sur la base retail et retourne le résultat en texte."""
     query_clean = query.strip().rstrip(";")
     if not query_clean.lower().startswith("select"):
         return "Erreur : seules les requêtes SELECT sont autorisées."
+
+    schema = get_schema_columns()
+    validation_error = validate_query_columns(query_clean, schema)
+    if validation_error:
+        return f"[REQUÊTE REJETÉE - NE PAS CONSIDÉRER CE RÉSULTAT COMME VALIDE] {validation_error}"
 
     engine = get_engine()
     try:
@@ -25,23 +64,19 @@ def sql_tool(query: str) -> str:
             rows = result.fetchall()
             columns = result.keys()
     except Exception as e:
-        return f"Erreur SQL : {e}"
+        return f"[ERREUR SQL - NE PAS CONSIDÉRER CE RÉSULTAT COMME VALIDE] {e}"
 
     if not rows:
         return "Aucun résultat."
 
-    # Formatte le résultat en texte lisible pour le LLM
     header = " | ".join(columns)
     lines = [header, "-" * len(header)]
-    for row in rows[:20]:  # limite à 20 lignes pour ne pas saturer le contexte du LLM
+    for row in rows[:20]:
         lines.append(" | ".join(str(v) for v in row))
     if len(rows) > 20:
         lines.append(f"... et {len(rows) - 20} lignes supplémentaires")
 
     return "\n".join(lines)
-
-
-# Description de l'outil au format attendu par le function calling (Ollama/OpenAI-compatible)
 SQL_TOOL_SCHEMA = {
     "type": "function",
     "function": {

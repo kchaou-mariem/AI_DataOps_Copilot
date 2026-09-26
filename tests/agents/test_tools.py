@@ -44,3 +44,21 @@ def test_quality_tool_invalid_table():
     result = quality_tool("invented_table")
     print(result)
     assert "inconnue" in result
+
+def test_sql_tool_rejects_invalid_column():
+    result = sql_tool("SELECT COUNT(*), policy FROM orders GROUP BY policy")
+    print(result)
+    assert "REJETÉE" in result
+
+
+def test_sql_tool_rejects_invalid_table():
+    result = sql_tool("SELECT * FROM policies")
+    print(result)
+    assert "REJETÉE" in result
+
+
+def test_sql_tool_still_works_for_valid_query():
+    result = sql_tool("SELECT COUNT(*) as total FROM orders")
+    print(result)
+    assert "REJETÉE" not in result  # vérifie qu'on n'a PAS de rejet, pas juste la présence du mot
+    assert "total" in result

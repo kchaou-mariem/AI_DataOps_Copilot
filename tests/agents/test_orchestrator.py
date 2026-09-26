@@ -14,3 +14,11 @@ def test_agent_rag_question():
     print("Réponse :", result.answer)
     print("Outils appelés :", result.tool_calls)
     assert "rag_tool" in "".join(result.tool_calls)
+
+def test_agent_multi_tool_question():
+    result = run_agent(
+        "Combien de commandes avons-nous au total, et quelle est la politique de livraison standard ?"
+    )
+    print("Réponse :", result.answer)
+    print("Outils appelés :", result.tool_calls)
+    assert len(result.tool_calls) >= 1

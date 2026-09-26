@@ -40,7 +40,7 @@ class AgentResponse:
     tool_calls: list[str] = field(default_factory=list)
 
 
-def run_agent(question: str, max_steps: int = 4) -> AgentResponse:
+def run_agent(question: str, max_steps: int = 8) -> AgentResponse:
     """Exécute la boucle agent : décision -> outil -> décision -> ... -> réponse finale."""
     host = os.getenv("OLLAMA_HOST", "http://localhost:11434")
     model = os.getenv("OLLAMA_MODEL", "qwen2.5:3b-instruct")
@@ -55,6 +55,7 @@ def run_agent(question: str, max_steps: int = 4) -> AgentResponse:
     for _ in range(max_steps):
         response = client.chat(model=model, messages=messages, tools=TOOLS_SCHEMA)
         message = response["message"]
+        print("DEBUG message reçu :", message)  # ligne temporaire de debug
         messages.append(message)
 
         tool_calls = message.get("tool_calls")
