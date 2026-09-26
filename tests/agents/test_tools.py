@@ -30,3 +30,17 @@ def test_rag_tool():
     result = rag_tool("Quel est le délai de retour d'un produit ?")
     print(result)
     assert "30 jours" in result or "jours" in result
+
+from backend.agents.tools import quality_tool
+
+
+def test_quality_tool():
+    result = quality_tool("orders")
+    print(result)
+    assert "Table : orders" in result
+
+
+def test_quality_tool_invalid_table():
+    result = quality_tool("invented_table")
+    print(result)
+    assert "inconnue" in result

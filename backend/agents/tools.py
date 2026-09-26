@@ -83,3 +83,46 @@ def rag_tool(question: str) -> str:
 
     sources = ", ".join(sorted(set(f"{s.filename} (p.{s.page})" for s in result.sources)))
     return f"{result.answer}\n\nSources : {sources}"
+
+from backend.data_pipeline.profiling import profile_table
+
+
+def quality_tool(table_name: str) -> str:
+    """Retourne un rapport de qualité (valeurs manquantes, doublons) pour une table."""
+    report = profile_table(table_name)
+    if "error" in report:
+        return report["error"]
+
+    lines = [
+        f"Table : {report['table']} ({report['n_rows']} lignes)",
+        f"Doublons : {report['n_duplicates']}",
+        "Valeurs manquantes par colonne :",
+    ]
+    for col, pct in report["missing_values_pct"].items():
+        lines.append(f"  - {col} : {pct}%")
+
+    return "\n".join(lines)
+
+
+QUALITY_TOOL_SCHEMA = {
+    "type": "function",
+    "function": {
+        "name": "quality_tool",
+        "description": (
+            "Analyse la qualité d'une table de la base de données (valeurs manquantes, doublons). "
+            "Tables disponibles : customers, products, orders. "
+            "Utilise cet outil pour des questions sur la fiabilité ou la complétude des données, "
+            "pas pour des questions métier sur les ventes elles-mêmes."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "table_name": {
+                    "type": "string",
+                    "description": "Le nom de la table à analyser : customers, products ou orders.",
+                }
+            },
+            "required": ["table_name"],
+        },
+    },
+}
