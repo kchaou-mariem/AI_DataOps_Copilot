@@ -81,7 +81,7 @@ def test_ingest_all_documents():
     print(f"Total : {total} chunks ingérés")
     assert total > 0
 
-
+@pytest.mark.integration
 def test_clear_and_reingest():
     import os
     from qdrant_client import QdrantClient
