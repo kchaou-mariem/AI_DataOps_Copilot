@@ -1,4 +1,6 @@
 """Tests du générateur RAG (Phase 1)."""
+import pytest
+
 from backend.rag.generator import generate_answer, build_prompt
 from backend.rag.retriever import RetrievedChunk
 
@@ -13,6 +15,7 @@ def test_build_prompt():
     assert "test.pdf" in prompt
 
 
+@pytest.mark.integration
 def test_generate_answer_end_to_end():
     result = generate_answer("Combien de temps ai-je pour retourner un produit ?")
     print("RÉPONSE :", result.answer)

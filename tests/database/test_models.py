@@ -1,4 +1,5 @@
 """Tests des modèles de base de données (Phase 2)."""
+import pytest
 from backend.database.models import Base, Customer, Product, Order
 
 
@@ -11,6 +12,7 @@ def test_models_import_correctly():
 from backend.data_pipeline.loader import get_engine, create_tables, seed_sample_data
 
 
+@pytest.mark.integration
 def test_create_and_seed():
     engine = get_engine()
     create_tables(engine)
@@ -21,6 +23,7 @@ def test_create_and_seed():
 from backend.data_pipeline.loader import drop_tables, seed_from_olist
 
 
+@pytest.mark.integration
 def test_seed_from_olist():
     engine = get_engine()
     drop_tables(engine)
@@ -29,6 +32,7 @@ def test_seed_from_olist():
     print("Données Olist insérées :", counts)
     assert counts["orders"] > 0
 
+@pytest.mark.integration
 def test_inspect_data():
     from sqlalchemy import text
     engine = get_engine()

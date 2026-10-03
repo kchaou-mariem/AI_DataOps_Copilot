@@ -1,8 +1,11 @@
 """Tests de l'évaluation du pipeline RAG."""
+import pytest
+
 from backend.eval.evaluate import evaluate_retrieval, run_evaluation
 from backend.rag.generator import generate_answer
 
 
+@pytest.mark.integration
 def test_evaluate_retrieval_single_question():
     ok = evaluate_retrieval(
         "Combien de temps ai-je pour retourner un produit ?",
@@ -12,6 +15,7 @@ def test_evaluate_retrieval_single_question():
     assert ok is True
 
 
+@pytest.mark.integration
 def test_run_evaluation_full():
     results = run_evaluation()
     print("\n=== RÉSUMÉ ===")
@@ -22,6 +26,7 @@ def test_run_evaluation_full():
 from backend.eval.evaluate import judge_faithfulness
 
 
+@pytest.mark.integration
 def test_judge_faithfulness_detects_fabrication():
     context = ["Le délai de retour est de 30 jours calendaires."]
     fake_answer = "Le délai de retour est de 90 jours et inclut une compensation de 50€."
@@ -29,6 +34,7 @@ def test_judge_faithfulness_detects_fabrication():
     print("Score pour une réponse inventée :", score)
     assert score < 1.0
 
+@pytest.mark.integration
 def test_generate_answer_out_of_scope_question():
     """Vérifie que le système ne fabrique pas de réponse quand l'info n'existe dans aucun document."""
     result = generate_answer("Quelle est la couleur du logo NovaShop ?")

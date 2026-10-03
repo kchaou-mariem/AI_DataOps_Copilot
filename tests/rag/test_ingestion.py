@@ -30,6 +30,7 @@ def test_chunk_text():
 from backend.rag.ingestion import embed_chunks, Chunk
 
 
+@pytest.mark.integration
 def test_embed_chunks():
     chunks = [
         Chunk(text="Le délai de retour est de 30 jours.", filename="test.pdf", page=1, chunk_id="c1"),
@@ -43,6 +44,7 @@ def test_embed_chunks():
 from backend.rag.ingestion import ingest_pdf
 
 
+@pytest.mark.integration
 def test_ingest_pdf_end_to_end():
     n_chunks = ingest_pdf("data/documents/procedure_retour.pdf")
     print(n_chunks, "chunks ingérés dans Qdrant")
@@ -66,6 +68,7 @@ def test_compute_chunk_size():
     assert size_medium == 300
 
 
+@pytest.mark.integration
 def test_ingest_all_documents():
     import os
     docs_dir = "data/documents"

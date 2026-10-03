@@ -19,6 +19,7 @@ def ensure_data_ingested():
             ingest_pdf(os.path.join(docs_dir, filename))
     yield
 
+@pytest.mark.integration
 def test_search():
     results = search("Combien de temps ai-je pour retourner un produit ?", top_k=2)
     print(len(results), "chunks trouvés")
@@ -26,6 +27,7 @@ def test_search():
         print(f"score={r.score:.3f} | {r.filename} p.{r.page} | {r.text[:80]}...")
     assert len(results) > 0
 
+@pytest.mark.integration
 def test_search_top4():
     results = search("Combien de temps ai-je pour retourner un produit ?", top_k=4)
     print(len(results), "chunks trouvés")
@@ -34,6 +36,7 @@ def test_search_top4():
 
 
 
+@pytest.mark.integration
 def test_dump_all_chunks_for_source():
     chunks = get_all_chunks(filename="procedure_retour.pdf")
     print(f"{len(chunks)} chunks trouvés pour ce document")
@@ -44,6 +47,7 @@ def test_dump_all_chunks_for_source():
 
 
 
+@pytest.mark.integration
 def test_clear_collection():
     import os
     from qdrant_client import QdrantClient
@@ -61,6 +65,7 @@ def test_clear_collection():
 from backend.rag.retriever import search_with_rerank
 
 
+@pytest.mark.integration
 def test_search_with_rerank():
     results = search_with_rerank("Combien de temps ai-je pour retourner un produit ?")
     print(len(results), "chunks trouvés après reranking")
