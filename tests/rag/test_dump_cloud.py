@@ -1,4 +1,8 @@
+import pytest
 from dotenv import load_dotenv
+
+pytestmark = pytest.mark.integration
+
 load_dotenv(".env.cloud", override=True)
 
 from backend.rag.retriever import get_all_chunks

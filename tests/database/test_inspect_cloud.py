@@ -1,5 +1,9 @@
 # tests/database/test_inspect_cloud.py
+import pytest
 from dotenv import load_dotenv
+
+pytestmark = pytest.mark.integration
+
 load_dotenv(".env.cloud", override=True)
 
 from backend.data_pipeline.loader import get_engine

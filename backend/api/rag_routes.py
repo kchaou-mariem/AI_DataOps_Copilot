@@ -31,15 +31,36 @@ class AskResponse(BaseModel):
 @router.post("/ingest")
 async def ingest_document(file: UploadFile):
     """Ingère un PDF : extraction -> chunking -> embeddings -> Qdrant."""
-    # TODO Phase 1 : appeler backend.rag.ingestion.ingest_pdf
-    raise NotImplementedError
+    import tempfile
+    import os
+    from backend.rag.ingestion import ingest_pdf
+
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
+        content = await file.read()
+        tmp.write(content)
+        tmp_path = tmp.name
+
+    try:
+        n_chunks = ingest_pdf(tmp_path)
+    finally:
+        os.remove(tmp_path)
+
+    return {"filename": file.filename, "chunks_created": n_chunks}
 
 
 @router.post("/ask", response_model=AskResponse)
 async def ask_question(payload: AskRequest):
     """Pose une question au système RAG et retourne réponse + sources."""
-    # TODO Phase 1 : appeler backend.rag.retriever puis backend.rag.generator
-    raise NotImplementedError
+    from backend.rag.generator import generate_answer
+
+    result = generate_answer(payload.question, final_top_k=payload.top_k)
+
+    sources = [
+        Source(filename=s.filename, page=s.page, excerpt=s.text[:200])
+        for s in result.sources
+    ]
+
+    return AskResponse(answer=result.answer, sources=sources)
 
 
 @router.post("/evaluate")

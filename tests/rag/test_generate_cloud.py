@@ -1,5 +1,9 @@
 # tests/rag/test_generate_cloud.py
+import pytest
 from dotenv import load_dotenv
+
+pytestmark = pytest.mark.integration
+
 load_dotenv(".env.cloud", override=True)
 
 from backend.rag.generator import generate_answer
