@@ -44,7 +44,23 @@ def run_agent(question: str, max_steps: int = 8) -> AgentResponse:
     """Exécute la boucle agent : décision -> outil -> décision -> ... -> réponse finale."""
     host = os.getenv("OLLAMA_HOST", "http://localhost:11434")
     model = os.getenv("OLLAMA_MODEL", "qwen2.5:3b-instruct")
-    client = ollama.Client(host=host)
+    openai_api_key = os.getenv("OPENAI_API_KEY")
+    groq_api_key = os.getenv("GROQ_API_KEY")
+    use_openai_api = bool(openai_api_key or groq_api_key)
+
+    if use_openai_api:
+        from openai import OpenAI
+
+        client = OpenAI(
+            api_key=openai_api_key or groq_api_key,
+            base_url="https://api.groq.com/openai/v1" if groq_api_key and not openai_api_key else None,
+        )
+        model = os.getenv(
+            "OPENAI_MODEL" if openai_api_key else "GROQ_MODEL",
+            "gpt-4o-mini" if openai_api_key else "llama-3.3-70b-versatile",
+        )
+    else:
+        client = ollama.Client(host=host)
 
     messages = [
         {"role": "system", "content": SYSTEM_PROMPT},
@@ -53,9 +69,32 @@ def run_agent(question: str, max_steps: int = 8) -> AgentResponse:
     tool_calls_log: list[str] = []
 
     for _ in range(max_steps):
-        response = client.chat(model=model, messages=messages, tools=TOOLS_SCHEMA)
-        message = response["message"]
-        print("DEBUG message reçu :", message)  # ligne temporaire de debug
+        if use_openai_api:
+            response = client.chat.completions.create(
+                model=model,
+                messages=messages,
+                tools=TOOLS_SCHEMA,
+            )
+            response_message = response.choices[0].message
+            message = {
+                "role": "assistant",
+                "content": response_message.content or "",
+            }
+            if response_message.tool_calls:
+                message["tool_calls"] = [
+                    {
+                        "id": call.id,
+                        "function": {
+                            "name": call.function.name,
+                            "arguments": call.function.arguments,
+                        },
+                    }
+                    for call in response_message.tool_calls
+                ]
+        else:
+            response = client.chat(model=model, messages=messages, tools=TOOLS_SCHEMA)
+            message = response["message"]
+
         messages.append(message)
 
         tool_calls = message.get("tool_calls")
@@ -75,7 +114,10 @@ def run_agent(question: str, max_steps: int = 8) -> AgentResponse:
             fn = TOOL_FUNCTIONS.get(fn_name)
             result = fn(**fn_args) if fn else f"Outil inconnu : {fn_name}"
 
-            messages.append({"role": "tool", "content": str(result)})
+            tool_message = {"role": "tool", "content": str(result)}
+            if use_openai_api:
+                tool_message["tool_call_id"] = call["id"]
+            messages.append(tool_message)
 
     return AgentResponse(
         answer="Désolé, je n'ai pas réussi à répondre après plusieurs tentatives.",
