@@ -84,6 +84,7 @@ def run_agent(question: str, max_steps: int = 8) -> AgentResponse:
                 message["tool_calls"] = [
                     {
                         "id": call.id,
+                        "type": "function",
                         "function": {
                             "name": call.function.name,
                             "arguments": call.function.arguments,
