@@ -2,12 +2,12 @@
 import pytest
 from dotenv import load_dotenv
 
-pytestmark = pytest.mark.integration
 
-load_dotenv(".env.cloud", override=True)
+@pytest.mark.integration
+def test_generate_cloud():
+	load_dotenv(".env.cloud", override=True)
+	from backend.rag.generator import generate_answer
 
-from backend.rag.generator import generate_answer
-
-result = generate_answer("Combien de temps ai-je pour retourner un produit ?")
-print("RÉPONSE :", result.answer)
-print("SOURCES :", [s.filename for s in result.sources])
+	result = generate_answer("Combien de temps ai-je pour retourner un produit ?")
+	print("RÉPONSE :", result.answer)
+	print("SOURCES :", [s.filename for s in result.sources])
