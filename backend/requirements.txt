@@ -18,6 +18,7 @@ qdrant-client>=1.11.2 #client pour interagir avec la base de données vectoriell
 
 # LLM
 ollama>=0.3.3 #communication avec le modèle LLM Ollama (Large Language Model) pour la génération de texte et la réponse aux requêtes
+openai>=1.0.0
 
 # Évaluation
 ragas>=0.1.20 #outil d'évaluation des performances du pipeline RAG (Retrieval-Augmented Generation) pour mesurer la qualité des réponses générées par le modèle LLM en fonction des documents ingérés et des requêtes posées

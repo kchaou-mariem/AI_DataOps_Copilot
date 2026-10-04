@@ -9,6 +9,8 @@ Pipeline d'ingestion des documents (Phase 1).
 """
 
 from dotenv import load_dotenv
+
+from backend.rag.qdrant_utils import get_qdrant_client
 load_dotenv()
 
 from dataclasses import dataclass
@@ -177,18 +179,18 @@ def embed_chunks(chunks: list[Chunk]) -> list[list[float]]:
 #     return len(all_chunks)
 
 import hashlib
+from backend.rag.qdrant_utils import get_qdrant_client
 
 def store_in_qdrant(chunks: list[Chunk], embeddings: list[list[float]]) -> None:
     import os
     from qdrant_client import QdrantClient
     from qdrant_client.models import Distance, PointStruct, VectorParams
 
-    host = os.getenv("QDRANT_HOST", "localhost")
-    port = int(os.getenv("QDRANT_PORT", 6333))
+    # host = os.getenv("QDRANT_HOST", "localhost")
+    # port = int(os.getenv("QDRANT_PORT", 6333))
     collection_name = os.getenv("QDRANT_COLLECTION", "documents")
 
-    client = QdrantClient(host=host, port=port)
-
+    client = get_qdrant_client()
     if not client.collection_exists(collection_name):
         client.create_collection(
             collection_name=collection_name,

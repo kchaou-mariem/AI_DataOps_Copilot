@@ -18,6 +18,7 @@ services:
       - ./data:/app/data
       - ./tests:/app/tests
       - ./pytest.ini:/app/pytest.ini
+      - ./.env.cloud:/app/.env.cloud
 
   postgres:
     image: postgres:16

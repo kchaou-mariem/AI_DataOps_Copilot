@@ -4,7 +4,7 @@ import pytest
 import os
 from backend.rag.ingestion import ingest_pdf
 from backend.rag.retriever import search, search_with_rerank, get_all_chunks
-
+from backend.rag.qdrant_utils import get_qdrant_client
 
 @pytest.fixture(scope="module", autouse=True)
 def ensure_data_ingested():
@@ -56,7 +56,7 @@ def test_clear_collection():
     port = int(os.getenv("QDRANT_PORT", 6333))
     collection_name = os.getenv("QDRANT_COLLECTION", "documents")
 
-    client = QdrantClient(host=host, port=port)
+    client = get_qdrant_client()
     if client.collection_exists(collection_name):
         client.delete_collection(collection_name)
     print("Collection supprimée.")

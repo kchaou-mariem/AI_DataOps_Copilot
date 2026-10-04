@@ -7,7 +7,7 @@ Recherche vectorielle (Phase 1).
     3. (optionnel) Re-ranking des résultats
 """
 from dataclasses import dataclass
-
+from backend.rag.qdrant_utils import get_qdrant_client
 
 @dataclass
 class RetrievedChunk:
@@ -36,7 +36,7 @@ def search(question: str, top_k: int = 4) -> list[RetrievedChunk]:
     port = int(os.getenv("QDRANT_PORT", 6333))
     collection_name = os.getenv("QDRANT_COLLECTION", "documents")
 
-    client = QdrantClient(host=host, port=port)
+    client = get_qdrant_client()
     query_vector = embed_query(question)
 
     results = client.query_points(
@@ -109,7 +109,7 @@ def get_all_chunks(filename: str) -> list[RetrievedChunk]:
     port = int(os.getenv("QDRANT_PORT", 6333))
     collection_name = os.getenv("QDRANT_COLLECTION", "documents")
 
-    client = QdrantClient(host=host, port=port)
+    client = get_qdrant_client()
 
     points, _ = client.scroll(
         collection_name=collection_name,

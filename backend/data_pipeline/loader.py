@@ -10,7 +10,15 @@ from backend.database.models import Base, Customer, Product, Order
 
 
 def get_engine():
-    """Construit l'engine SQLAlchemy à partir des variables d'environnement."""
+    """Construit l'engine SQLAlchemy — utilise DATABASE_URL si présent (Supabase/cloud),
+    sinon reconstruit l'URL à partir des variables POSTGRES_* individuelles (local)."""
+    database_url = os.getenv("DATABASE_URL")
+
+    if database_url:
+        # Mode cloud (Supabase) : URL complète déjà fournie, SSL requis
+        return create_engine(database_url)
+
+    # Mode local : reconstruction classique à partir des variables individuelles
     user = os.getenv("POSTGRES_USER", "dataops")
     password = os.getenv("POSTGRES_PASSWORD", "changeme")
     host = os.getenv("POSTGRES_HOST", "localhost")

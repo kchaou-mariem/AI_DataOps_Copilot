@@ -43,22 +43,68 @@ RÉPONSE :
 Score :"""
 
 
-def judge_faithfulness(answer: str, context_chunks: list[str]) -> float:
-    """Demande à un LLM de juger si la réponse est fidèle au contexte fourni."""
-    import ollama
+# def judge_faithfulness(answer: str, context_chunks: list[str]) -> float:
+#     """Demande à un LLM de juger si la réponse est fidèle au contexte fourni."""
+#     import ollama
 
-    host = os.getenv("OLLAMA_HOST", "http://localhost:11434")
-    model = os.getenv("OLLAMA_MODEL", "qwen2.5:3b-instruct")
+#     host = os.getenv("OLLAMA_HOST", "http://localhost:11434")
+#     model = os.getenv("OLLAMA_MODEL", "qwen2.5:3b-instruct")
+
+#     context = "\n\n".join(context_chunks)
+#     prompt = JUDGE_PROMPT_TEMPLATE.format(context=context, answer=answer)
+
+#     client = ollama.Client(host=host)
+#     response = client.chat(
+#         model=model,
+#         messages=[{"role": "user", "content": prompt}],
+#     )
+#     raw_score = response["message"]["content"].strip()
+
+#     # Le LLM peut parfois ajouter du texte malgré la consigne — on extrait le premier nombre trouvé
+#     try:
+#         return float(raw_score)
+#     except ValueError:
+#         import re
+#         match = re.search(r"[01](?:\.[05])?", raw_score)
+#         if match:
+#             return float(match.group())
+#         print(f"⚠️ Score de faithfulness non reconnu, réponse brute du juge : '{raw_score}' → traité comme 0.0")
+#         return 0.0
+
+def judge_faithfulness(answer: str, context_chunks: list[str]) -> float:
+    """Demande à un LLM de juger si la réponse est fidèle au contexte fourni.
+    Utilise Groq en cloud (si GROQ_API_KEY présent), sinon Ollama en local."""
+    import os
 
     context = "\n\n".join(context_chunks)
     prompt = JUDGE_PROMPT_TEMPLATE.format(context=context, answer=answer)
 
-    client = ollama.Client(host=host)
-    response = client.chat(
-        model=model,
-        messages=[{"role": "user", "content": prompt}],
-    )
-    raw_score = response["message"]["content"].strip()
+    groq_api_key = os.getenv("GROQ_API_KEY")
+
+    if groq_api_key:
+        # Mode cloud : Groq (API compatible OpenAI)
+        from openai import OpenAI
+        client = OpenAI(
+            api_key=groq_api_key,
+            base_url="https://api.groq.com/openai/v1",
+        )
+        model = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+        response = client.chat.completions.create(
+            model=model,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        raw_score = response.choices[0].message.content.strip()
+    else:
+        # Mode local : Ollama (comportement existant, inchangé)
+        import ollama
+        host = os.getenv("OLLAMA_HOST", "http://localhost:11434")
+        model = os.getenv("OLLAMA_MODEL", "qwen2.5:3b-instruct")
+        client = ollama.Client(host=host)
+        response = client.chat(
+            model=model,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        raw_score = response["message"]["content"].strip()
 
     # Le LLM peut parfois ajouter du texte malgré la consigne — on extrait le premier nombre trouvé
     try:
@@ -70,8 +116,7 @@ def judge_faithfulness(answer: str, context_chunks: list[str]) -> float:
             return float(match.group())
         print(f"⚠️ Score de faithfulness non reconnu, réponse brute du juge : '{raw_score}' → traité comme 0.0")
         return 0.0
-
-
+    
 def run_evaluation(dataset_path: str = "backend/eval/eval_dataset.json") -> dict:
     """Lance l'évaluation complète sur toutes les questions du dataset."""
     questions = load_eval_dataset(dataset_path)

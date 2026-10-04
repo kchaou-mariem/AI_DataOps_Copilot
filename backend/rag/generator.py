@@ -37,20 +37,51 @@ RÉPONSE :"""
     return prompt
 
 
-def call_llm(prompt: str) -> str:
-    """Envoie le prompt au LLM via Ollama et retourne la réponse générée."""
-    import os
-    import ollama
+# def call_llm(prompt: str) -> str:
+#     """Envoie le prompt au LLM via Ollama et retourne la réponse générée."""
+#     import os
+#     import ollama
 
+#     host = os.getenv("OLLAMA_HOST", "http://localhost:11434")
+#     model = os.getenv("OLLAMA_MODEL", "qwen2.5:3b-instruct")
+
+#     client = ollama.Client(host=host)
+#     response = client.chat(
+#         model=model,
+#         messages=[{"role": "user", "content": prompt}],
+#     )
+
+#     return response["message"]["content"]
+
+def call_llm(prompt: str) -> str:
+    """Envoie le prompt au LLM — Ollama en local, Groq si GROQ_API_KEY est présent (cloud)."""
+    import os
+
+    groq_api_key = os.getenv("GROQ_API_KEY")
+
+    if groq_api_key:
+        # Mode cloud : Groq (API compatible OpenAI)
+        from openai import OpenAI
+        client = OpenAI(
+            api_key=groq_api_key,
+            base_url="https://api.groq.com/openai/v1",
+        )
+        model = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+        response = client.chat.completions.create(
+            model=model,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        return response.choices[0].message.content
+
+    # Mode local : Ollama (comportement existant, inchangé)
+    import ollama
     host = os.getenv("OLLAMA_HOST", "http://localhost:11434")
     model = os.getenv("OLLAMA_MODEL", "qwen2.5:3b-instruct")
-
     client = ollama.Client(host=host)
     response = client.chat(
         model=model,
         messages=[{"role": "user", "content": prompt}],
     )
-
     return response["message"]["content"]
 
 
