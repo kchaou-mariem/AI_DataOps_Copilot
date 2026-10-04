@@ -17,15 +17,26 @@ class RetrievedChunk:
     score: float
 
 def embed_query(question: str) -> list[float]:
-    """Encode la question utilisateur avec le modèle d'embeddings."""
+    """Encode la question — Cohere en cloud, sinon sentence-transformers en local."""
     import os
-    from sentence_transformers import SentenceTransformer
 
+    cohere_api_key = os.getenv("COHERE_API_KEY")
+
+    if cohere_api_key:
+        import cohere
+        co = cohere.ClientV2(api_key=cohere_api_key)
+        response = co.embed(
+            texts=[question],
+            model="embed-multilingual-v3.0",
+            input_type="search_query",
+            embedding_types=["float"],
+        )
+        return response.embeddings.float_[0]
+
+    from sentence_transformers import SentenceTransformer
     model_name = os.getenv("EMBEDDING_MODEL", "BAAI/bge-small-en-v1.5")
     model = SentenceTransformer(model_name)
-
     return model.encode(question).tolist()
-
 
 def search(question: str, top_k: int = 4) -> list[RetrievedChunk]:
     """Recherche les chunks les plus pertinents dans Qdrant."""
@@ -57,43 +68,53 @@ def search(question: str, top_k: int = 4) -> list[RetrievedChunk]:
 
 
 def rerank(question: str, chunks: list[RetrievedChunk], top_k: int = 4) -> list[RetrievedChunk]:
-    """
-    Réordonne les chunks récupérés via un cross-encoder (plus précis mais plus lent
-    que l'embedding cosinus, car il lit la question ET le chunk ensemble).
-    Retourne les top_k meilleurs chunks après affinage.
-    """
+    """Réordonne les chunks — Cohere Rerank en cloud, cross-encoder local sinon."""
     import os
-    from sentence_transformers import CrossEncoder
 
     if not chunks:
         return chunks
 
-    model_name = os.getenv("RERANKER_MODEL", "cross-encoder/mmarco-mMiniLMv2-L12-H384-v1")
+    cohere_api_key = os.getenv("COHERE_API_KEY")
+
+    if cohere_api_key:
+        import cohere
+        co = cohere.ClientV2(api_key=cohere_api_key)
+        documents = [chunk.text for chunk in chunks]
+        response = co.rerank(
+            model="rerank-multilingual-v3.0",
+            query=question,
+            documents=documents,
+            top_n=top_k,
+        )
+        result = [
+            RetrievedChunk(
+                text=chunks[r.index].text,
+                filename=chunks[r.index].filename,
+                page=chunks[r.index].page,
+                score=r.relevance_score,
+            )
+            for r in response.results
+        ]
+        return result
+
+    # Mode local : cross-encoder sentence-transformers (comportement existant)
+    import os as os_local
+    from sentence_transformers import CrossEncoder
+
+    model_name = os_local.getenv("RERANKER_MODEL", "cross-encoder/mmarco-mMiniLMv2-L12-H384-v1")
     model = CrossEncoder(model_name)
 
-    # Le cross-encoder attend des paires (question, texte_du_chunk)
     pairs = [(question, chunk.text) for chunk in chunks]
     scores = model.predict(pairs)
 
-    # On associe chaque chunk à son nouveau score, puis on trie du meilleur au moins bon
-    reranked = sorted(
-        zip(chunks, scores),
-        key=lambda pair: pair[1],
-        reverse=True,
-    )
+    reranked = sorted(zip(chunks, scores), key=lambda pair: pair[1], reverse=True)
 
-    # On remplace le score cosinus par le score du cross-encoder (plus représentatif du classement final)
     result = [
-        RetrievedChunk(
-            text=chunk.text,
-            filename=chunk.filename,
-            page=chunk.page,
-            score=float(cross_score),
-        )
+        RetrievedChunk(text=chunk.text, filename=chunk.filename, page=chunk.page, score=float(cross_score))
         for chunk, cross_score in reranked
     ]
-
     return result[:top_k]
+
 
 def get_all_chunks(filename: str) -> list[RetrievedChunk]:
     """

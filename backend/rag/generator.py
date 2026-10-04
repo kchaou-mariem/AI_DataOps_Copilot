@@ -54,8 +54,21 @@ RÉPONSE :"""
 #     return response["message"]["content"]
 
 def call_llm(prompt: str) -> str:
-    """Envoie le prompt au LLM — Ollama en local, Groq si GROQ_API_KEY est présent (cloud)."""
+    """Envoie le prompt à OpenAI, Groq ou Ollama selon les variables configurées."""
     import os
+
+    openai_api_key = os.getenv("OPENAI_API_KEY")
+
+    if openai_api_key:
+        from openai import OpenAI
+
+        client = OpenAI(api_key=openai_api_key)
+        model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+        response = client.chat.completions.create(
+            model=model,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        return response.choices[0].message.content
 
     groq_api_key = os.getenv("GROQ_API_KEY")
 

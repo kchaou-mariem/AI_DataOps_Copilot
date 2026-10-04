@@ -117,16 +117,27 @@ def ingest_pdf(pdf_path: str) -> int:
     return len(all_chunks)
 
 def embed_chunks(chunks: list[Chunk]) -> list[list[float]]:
-    """Calcule les embeddings de chaque chunk via sentence-transformers."""
-    import os #sert à récupérer la variable d'environnement EMBEDDING_MODEL
-    from sentence_transformers import SentenceTransformer #sert à calculer les embeddings des chunks
+    """Calcule les embeddings — Cohere en cloud (si COHERE_API_KEY présent), sinon sentence-transformers en local."""
+    import os
 
-    model_name = os.getenv("EMBEDDING_MODEL", "BAAI/bge-small-en-v1.5") #récupère le nom du modèle d'embedding depuis la variable d'environnement EMBEDDING_MODEL, ou utilise un modèle par défaut
-    model = SentenceTransformer(model_name) #charge le modèle d'embedding
+    cohere_api_key = os.getenv("COHERE_API_KEY")
+    texts = [chunk.text for chunk in chunks]
 
-    texts = [chunk.text for chunk in chunks] # récupère le texte de chaque chunk pour les passer au modèle d'embedding
-    embeddings = model.encode(texts, show_progress_bar=False) # calcule les embeddings pour chaque chunk
+    if cohere_api_key:
+        import cohere
+        co = cohere.ClientV2(api_key=cohere_api_key)
+        response = co.embed(
+            texts=texts,
+            model="embed-multilingual-v3.0",
+            input_type="search_document",
+            embedding_types=["float"],
+        )
+        return response.embeddings.float_
 
+    from sentence_transformers import SentenceTransformer
+    model_name = os.getenv("EMBEDDING_MODEL", "BAAI/bge-small-en-v1.5")
+    model = SentenceTransformer(model_name)
+    embeddings = model.encode(texts, show_progress_bar=False)
     return embeddings.tolist()
 
 
