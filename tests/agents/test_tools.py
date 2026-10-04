@@ -72,3 +72,9 @@ def test_sql_tool_still_works_for_valid_query():
     print(result)
     assert "REJETÉE" not in result  # vérifie qu'on n'a PAS de rejet, pas juste la présence du mot
     assert "total" in result
+    
+@pytest.mark.integration
+def test_sql_tool_debug_connection():
+    """Test de diagnostic : affiche l'erreur SQL brute, sans paraphrase du LLM."""
+    result = sql_tool("SELECT COUNT(*) AS total FROM orders")
+    print("RÉSULTAT BRUT :", result)

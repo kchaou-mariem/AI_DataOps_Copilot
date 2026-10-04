@@ -57,7 +57,7 @@ def run_agent(question: str, max_steps: int = 8) -> AgentResponse:
         )
         model = os.getenv(
             "OPENAI_MODEL" if openai_api_key else "GROQ_MODEL",
-            "gpt-4o-mini" if openai_api_key else "llama-3.3-70b-versatile",
+            "gpt-4o-mini" if openai_api_key else "openai/gpt-oss-120b",
         )
     else:
         client = ollama.Client(host=host)
